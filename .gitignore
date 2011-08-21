@@ -1,0 +1,6 @@
+log
+regression.diffs
+regression.out
+results
+sybase_fdw.so
+tmp_check
