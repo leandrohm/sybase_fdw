@@ -1,0 +1,37 @@
+--
+-- Test Sybase Foreign Data Wrapper
+--
+
+-- Clean up in case a prior regression run failed
+SET client_min_messages TO 'error';
+DROP ROLE IF EXISTS sybase_fdw_superuser, sybase_fdw_user, no_priv_user;
+RESET client_min_messages;
+
+CREATE ROLE sybase_fdw_superuser LOGIN SUPERUSER; -- is a superuser
+CREATE ROLE sybase_fdw_user LOGIN;                -- has priv and user mapping
+CREATE ROLE no_priv_user LOGIN;                 -- has priv but no user mapping
+
+-- Install sybase_fdw
+CREATE EXTENSION sybase_fdw;
+
+-- sybase_fdw_superuser owns fdw-related objects
+SET ROLE sybase_fdw_superuser;
+CREATE SERVER sybase_server FOREIGN DATA WRAPPER sybase_fdw;
+
+-- privilege tests
+SET ROLE sybase_fdw_user;
+CREATE FOREIGN DATA WRAPPER sybase_fdw2 HANDLER sybase_fdw_handler VALIDATOR sybase_fdw_validator;   -- ERROR
+CREATE SERVER sybase_server2 FOREIGN DATA WRAPPER sybase_fdw;   -- ERROR
+CREATE USER MAPPING FOR sybase_fdw_user SERVER sybase_server;   -- ERROR
+
+SET ROLE sybase_fdw_superuser;
+GRANT USAGE ON FOREIGN SERVER sybase_server TO sybase_fdw_user;
+
+SET ROLE sybase_fdw_user;
+CREATE USER MAPPING FOR sybase_fdw_user SERVER sybase_server;
+
+-- create user mappings and grant privilege to test users
+SET ROLE sybase_fdw_superuser;
+CREATE USER MAPPING FOR sybase_fdw_superuser SERVER sybase_server;
+CREATE USER MAPPING FOR no_priv_user SERVER sybase_server;
+
